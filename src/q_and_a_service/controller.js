@@ -18,7 +18,22 @@ const getSpecificAnswers = (req, res) => {
   })
 };
 
+const askQuestion = (req, res) => {
+  const { body, asker_name, asker_email } = req.body;
+  const product_id = req.params.product_id;
+  const date_written = 1595884714409;
+  const reported = false;
+  const helpful = 0;
+  pool.query(queries.askQuestion, [product_id, body, date_written, asker_name, asker_email, reported, helpful], (error, results) => {
+    if (error) throw error;
+    res.status(201).send('Question posted successfully!');
+    console.log('Question posted successfully!');
+  })
+};
+
+
 module.exports = {
   getQA,
   getSpecificAnswers,
+   askQuestion,
 };
