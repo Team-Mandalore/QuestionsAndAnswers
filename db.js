@@ -5,7 +5,7 @@ const { USER, HOST, DATABASE, PASSWORD } = process.env;
 
 
 const pool = new Pool ({
-  user: USER,
+  user: DB_USER,
   host: HOST,
   database: DATABASE,
   password: PASSWORD,

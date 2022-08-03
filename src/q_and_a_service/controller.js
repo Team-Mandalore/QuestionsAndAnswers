@@ -2,7 +2,6 @@ const pool = require ('../../db.js');
 const queries = require ('./queries.js');
 
 const getQA = (req, res) => {
-  console.log('queries.qa', queries.getQA);
   const product_id = parseInt(req.params.product_id);
   pool.query(queries.getQA , [product_id], (error, results) => {
     if (error) throw error;
@@ -31,9 +30,15 @@ const askQuestion = (req, res) => {
   })
 };
 
+const answerQuestion = (req, res) => {
+
+}
+
+
 
 module.exports = {
   getQA,
   getSpecificAnswers,
-   askQuestion,
+  askQuestion,
+  answerQuestion,
 };
