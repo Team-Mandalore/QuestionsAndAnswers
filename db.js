@@ -10,6 +10,7 @@ const pool = new Pool ({
   database: DATABASE,
   password: PASSWORD,
   port: 5432,
+  max: 30,
 });
 
 module.exports = pool;

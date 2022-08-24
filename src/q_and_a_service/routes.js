@@ -5,7 +5,7 @@ const router = Router();
 /*
 NOTE get request to /qa/:question_id/answers endpoint should only return all answers and associated photo URLs in the db associated with the indicated question id
 */
-router.get ('/:question_id/answers', controller.getSpecificAnswers);
+//router.get ('/:question_id/answers', controller.getSpecificAnswers);
 
 
 

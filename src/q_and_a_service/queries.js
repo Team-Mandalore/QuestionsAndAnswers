@@ -15,6 +15,7 @@ FIXME answerQuestion isn't working; take a look and fix
 module.exports = {
   getQA,
   getSpecificAnswers,
+  getAnswerPhotos,
   askQuestion,
   //answerQuestion,
 };

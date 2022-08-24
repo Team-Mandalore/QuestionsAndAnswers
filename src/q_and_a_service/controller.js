@@ -3,99 +3,97 @@ const queries = require ('./queries.js');
 const models =  require ('./models.js');
 
 /*
-SECTION- //----------OLD WORKING QUERY CALLS -----------------------------------//These are olf query calls that I wrote before writing the models.js file and moving db intearction there.
+NOTE getSpecificAnswers controller shouldn't be tied to an endpoint on its own.  It's written to be called inside the /qa/product_id controller.
 */
 
-// const getQA = (req, res) => {
-//   const product_id = parseInt(req.params.product_id);
-//   pool.query(queries.getQA , [product_id], (error, results) => {
-//     if (error) throw error;
-//     res.status(200).json(results.rows);
-//   })
-// };
-
-
-// const getSpecificAnswers = (req, res) => {
-//   const question_id = parseInt(req.params.question_id);
-//   pool.query(queries.getSpecificAnswers, [question_id], (error, results) => {
-//     if (error) throw error;
-//     res.status(200).json(results.rows);
-//   })
-// };
-//-------------------- END OLD WORKING QUERY CALLS --------------------------------//
-
-
-/*
-SECTION I tried to combine the query calls, nesting one into the other.  This butchered the code.  The following section of code is the above query calls nested and butchered.  This also occured BEFORE I moved db interaction in a new models.js file.
-*/
-
-//await
-// const getQA = async (req1, res1) => {
-//   try {
-//     const getQ = await (req2, res2) => {
-//       const product_id = parseInt(req2.params.product_id);
-//       pool.query(queries.getQA , [product_id], (error2, results2) => {
-//         if (error2) {
-//           throw error2;
-//         } else if (res2.status === 200) {
-//           return json(results2.rows)
-//         }
-//       })
-//     };
-//   } catch (err) {
-//     throw err
-//   }
-//   const question_id = parseInt(req.params.question_id);
-//  //const getQ = await the query; assign variable to result; wrap in try/catch
-
-//   pool.query(queries.getSpecificAnswers, [question_id], (error, results) => {
-//     if (error) throw error;
-//     res.status(200).json(results.rows);
-//   })
-// };
-//--------------------- END OF BUTCHERED QUERy CALLS --------------------------------//
-
-
-const getSpecificAnswers = async (req, res) => {
+const getSpecificAnswers = async (question_id) => {
   try {
-    const { question_id } = req.params;
     const specificAnswers = await models.getSpecificAnswers(question_id);
-    //console.log('specificAnswers: ', specificAnswers); returns an array of objects
     const answers = {}
     for (let i = 0; i < specificAnswers.length; i++) {
+      const currentAnswerId = specificAnswers[i]["id"];
+      const answerPhotos = await models.getAnswerPhotos(currentAnswerId);
       answers[specificAnswers[i]["id"]] = specificAnswers[i];
+      answers[currentAnswerId]["photos"] = answerPhotos["url"];
     }
-    res.send(answers);
+    //console.log(answers);
+    return answers;
   } catch (err) {
-    console.log(err);
-    res.sendStatus(500);
+    //console.log(err);
+    return err;
   }
 };
 
 
-    // pool.query(queries.getSpecificAnswers, [question_id], (error, results) => {
-    //   if (error) throw error;
-    //   res.status(200).json(results.rows);
-    // })
 
-
-
-/*
-TODO Use forEach to match answers to question IDs; Depends on model.js Todo
-*/
 const getQA = async (req, res) => {
-  try {
-    const { product_id } = req.params;
-    const questions = await models.getAllQuestions(req.params.product_id);
+  const { product_id } = req.params;
+  const questions = await models.getAllQuestions(req.params.product_id);
+  const updatedQuestionsArray = questions.map(question => {
+    return {
+      "question_id": question.id,
+      "question_body": question.body,
+      "question_date": new Date(question.date_written),
+      "asker_name": question.asker_name,
+      "question_helpfulness": question.helpful,
+      "reported": question.reported,
+    }
+  })
+    //Works. Logs array of question objects. console.log('questions: ', questions);
+
+  Promise.all(updatedQuestionsArray.map(question => {
+    const question_id = question["id"];
+    return getSpecificAnswers(question_id);
+  }))
+  .then ((currentAnswersArray) => {
+    //works. logs array of answer objects.
+    // console.log('currentAnswersArray: ', currentAnswersArray);
+    currentAnswersArray.map((answerObject => {
+      // works. For each question id, this map logs an object with every answer objects of the associated question id nested within console.log('answerObject: ', answerObject);
+      loop1:
+      for (let i = 0; i < updatedQuestionsArray.length; i++) {
+        //console.log('questions: ', questions)
+        if (questions[i].answers !== undefined) {
+          break;
+        }
+        loop2:
+        for (let j = 0; j < currentAnswersArray.length; j++) {
+
+          //console.log('currentAnswersArray: ', currentAnswersArray)
+
+          loop3:
+          for (var key in currentAnswersArray[j]) {
+            //works. Key is logging the answer number for each answer object console.log('key: ', key)
+            if (Number(questions[i].id) === Number(currentAnswersArray[j][key]['question_id'])) {
+              questions[i].answers = answerObject;
+              // console.log('questions object after loops: ', questions)
+              break loop2;
+            }
+          }
+        }
+      }
+    }))
+    return updatedQuestionsArray;
+  })
+  // .then ((updatedQuestions) => {
+  //   console.log('updatedQuestions: ', updatedQuestions);
+  //   questionsAndAnswers = (updatedQuestions)
+  //   return questionsAndAnswers
+  // })
+  .then((questionsWithAnswers) => {
+    //console.log(response)
     const data = {
       product_id,
-      results: questions,
+      results: questionsWithAnswers,
     };
+    //console.log('data: ', data);
+    res.set('Connection', 'close');
     res.send(data);
-  } catch (err) {
+  })
+  .catch ((err) => {
     console.log(err);
     res.send(500);
-  }
+  })
 }
 
 
